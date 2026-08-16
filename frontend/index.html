@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgenteCV — Tu agente personal de búsqueda laboral</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#6D4AFF",
+              canvas: "#F7F7F8",
+              ink: "#18181B",
+              success: "#22A06B",
+              warning: "#E6A700",
+            },
+            fontFamily: {
+              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="min-h-screen bg-canvas font-sans text-ink">
+    <a href="#contenido" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2">Saltar al contenido</a>
+
+    <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+      <p class="text-sm font-semibold tracking-tight">AgenteCV</p>
+      <a href="/dashboard" class="text-sm text-zinc-500 hover:text-ink">Ir al panel</a>
+    </header>
+
+    <main id="contenido" class="mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-8 lg:grid-cols-2 lg:items-center lg:gap-16 lg:pt-16">
+      <section>
+        <p class="mb-4 text-sm font-medium text-primary">Agente personal</p>
+        <h1 class="max-w-xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+          Tu agente personal de búsqueda laboral.
+        </h1>
+        <p class="mt-5 max-w-lg text-base leading-7 text-zinc-600">
+          Sube tu CV una vez. AgenteCV analiza tu perfil, encuentra oportunidades y adapta tu CV para cada postulación.
+        </p>
+
+        <ul class="mt-8 space-y-3 text-sm text-zinc-700">
+          <li class="flex gap-3"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></span>Analizamos tu experiencia</li>
+          <li class="flex gap-3"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></span>Encontramos oportunidades relevantes</li>
+          <li class="flex gap-3"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></span>Adaptamos tu CV</li>
+          <li class="flex gap-3"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></span>Tú mantienes el control</li>
+        </ul>
+
+        <form id="upload-form" class="mt-10">
+          <label for="cv-file" class="sr-only">Seleccionar CV en PDF</label>
+          <input id="cv-file" name="file" type="file" accept="application/pdf,.pdf" class="sr-only" />
+
+          <div class="flex flex-wrap items-center gap-3">
+            <button id="upload-button" type="button" class="btn-primary rounded-xl px-5 py-3 text-sm font-medium">
+              Subir mi CV
+            </button>
+            <p id="file-label" class="text-sm text-zinc-500">PDF, una sola vez. El original no se modifica.</p>
+          </div>
+        </form>
+
+        <div id="upload-status" class="mt-6" aria-live="polite"></div>
+      </section>
+
+      <aside class="card p-6 sm:p-8" aria-hidden="true">
+        <p class="text-xs font-medium uppercase tracking-wider text-zinc-400">Flujo</p>
+        <ol class="mt-5 space-y-4">
+          <li class="rounded-xl border border-zinc-200 bg-canvas px-4 py-3">
+            <p class="text-sm font-medium">CV maestro</p>
+            <p class="text-xs text-zinc-500">Intacto. Fuente de verdad.</p>
+          </li>
+          <li class="rounded-xl border border-zinc-200 px-4 py-3">
+            <p class="text-sm font-medium">Perfil del candidato</p>
+            <p class="text-xs text-zinc-500">Una lectura estructurada.</p>
+          </li>
+          <li class="rounded-xl border border-zinc-200 px-4 py-3">
+            <p class="text-sm font-medium">Oportunidades</p>
+            <p class="text-xs text-zinc-500">Match por oferta, no un CV genérico.</p>
+          </li>
+          <li class="rounded-xl border border-zinc-200 px-4 py-3">
+            <p class="text-sm font-medium">Postulaciones</p>
+            <p class="text-xs text-zinc-500">Una versión adaptada por empresa.</p>
+          </li>
+        </ol>
+      </aside>
+    </main>
+
+    <script type="module" src="/js/cv.js"></script>
+  </body>
+</html>

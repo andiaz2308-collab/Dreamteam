@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Configuración — AgenteCV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#6D4AFF",
+              canvas: "#F7F7F8",
+              ink: "#18181B",
+              success: "#22A06B",
+              warning: "#E6A700",
+            },
+            fontFamily: {
+              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="min-h-screen bg-canvas font-sans text-ink">
+    <div id="sidebar-backdrop" class="fixed inset-0 z-20 hidden bg-zinc-900/20 lg:hidden"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 flex w-64 -translate-x-full flex-col border-r border-zinc-200 bg-white px-4 py-6 transition-transform lg:translate-x-0">
+      <div class="mb-8 flex items-center justify-between px-2">
+        <p class="text-sm font-semibold">AgenteCV</p>
+        <button type="button" class="lg:hidden" data-close-sidebar aria-label="Cerrar menú">✕</button>
+      </div>
+      <nav class="flex flex-1 flex-col gap-1 text-sm">
+        <a class="sidebar-link rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50" href="/dashboard">Dashboard</a>
+        <a class="sidebar-link rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50" href="/cv">Mi CV</a>
+        <a class="sidebar-link rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50" href="/opportunities">Oportunidades</a>
+        <a class="sidebar-link rounded-lg px-3 py-2 text-zinc-600 hover:bg-zinc-50" href="/applications">Postulaciones</a>
+        <a class="sidebar-link active rounded-lg px-3 py-2" href="/settings">Configuración</a>
+      </nav>
+    </aside>
+
+    <div class="lg:pl-64">
+      <header class="flex items-center justify-between border-b border-zinc-200 bg-white/80 px-4 py-3 backdrop-blur lg:px-8">
+        <button id="menu-toggle" type="button" class="rounded-lg px-2 py-1 text-sm lg:hidden" aria-expanded="false" aria-controls="sidebar">Menú</button>
+        <p class="text-sm text-zinc-500">Configuración</p>
+      </header>
+
+      <main class="px-4 py-8 lg:px-8">
+        <h1 class="text-2xl font-semibold tracking-tight">Configuración</h1>
+        <p class="mt-1 text-sm text-zinc-500">La API key de OpenAI nunca sale del backend. No hay login todavía.</p>
+
+        <section class="mt-8 grid gap-4 lg:grid-cols-2">
+          <article class="card p-6">
+            <h2 class="text-sm font-medium">Modelo</h2>
+            <p id="settings-model" class="mt-2 text-lg font-semibold">gpt-4o-mini</p>
+            <p class="mt-2 text-sm text-zinc-500">Se usa solo para extraer perfil y ofertas. El matching es determinista.</p>
+          </article>
+          <article class="card p-6">
+            <h2 class="text-sm font-medium">Modo de postulación</h2>
+            <p id="settings-mode" class="mt-2 text-lg font-semibold">Revisión manual</p>
+            <p class="mt-2 text-sm text-zinc-500">Hoy no hay envío automático a portales. Si no existe integración permitida, la postulación queda en revisión.</p>
+          </article>
+        </section>
+
+        <article class="card mt-4 p-6">
+          <h2 class="text-sm font-medium">Cómo se enviarán postulaciones</h2>
+          <ol class="mt-4 space-y-3 text-sm leading-6 text-zinc-700">
+            <li>1. El motor crea una Application con IDs de perfil, oferta y CV adaptado.</li>
+            <li>2. La cola elige un Provider. DirectApply solo se usará con APIs o ATS permitidos.</li>
+            <li>3. Si no hay integración permitida, ManualReviewProvider deja la postulación en REVIEW_REQUIRED.</li>
+            <li>4. Tú revisas y envías en el portal. AgenteCV no resuelve CAPTCHA, no evade anti-bot y no guarda contraseñas de terceros.</li>
+          </ol>
+        </article>
+
+        <article class="card mt-4 p-6">
+          <h2 class="text-sm font-medium">Persistencia y cuenta</h2>
+          <p id="settings-persistence" class="mt-3 text-sm text-zinc-700"></p>
+        </article>
+      </main>
+    </div>
+
+    <script type="module" src="/js/settings.js"></script>
+  </body>
+</html>
