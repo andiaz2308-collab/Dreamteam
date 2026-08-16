@@ -1,0 +1,7 @@
+.git
+.venv
+.env
+__pycache__
+ESTADO_PROYECTO.md
+*.pyc
+.cursor
