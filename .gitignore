@@ -11,3 +11,10 @@ __pycache__/
 .idea/
 .vscode/
 *.log
+
+# dumps locales / notas de trabajo (no subir)
+ESTADO_PROYECTO.md
+
+# supabase local
+supabase/.temp/
+supabase/.branches/

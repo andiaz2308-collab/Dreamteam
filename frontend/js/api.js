@@ -45,6 +45,8 @@ export async function uploadCv(file) {
       extraction_method: payload.document?.extraction_method,
       has_text: payload.document?.has_text,
     },
+    profile: payload.profile,
+    cleaned_cv: payload.cleaned_cv,
   };
 }
 

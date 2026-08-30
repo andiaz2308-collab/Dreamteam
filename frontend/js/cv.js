@@ -1,4 +1,4 @@
-import { analyzeCv, getCandidateProfile, initShell, uploadCv } from "./api.js";
+import { getCandidateProfile, initShell, uploadCv } from "./api.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -23,13 +23,77 @@ function renderStatus(container, variant, title, body) {
   `;
 }
 
+function renderList(items) {
+  if (!items.length) {
+    return `<p class="mt-3 text-sm text-zinc-500">No aparece en el CV.</p>`;
+  }
+  return `<ul class="mt-3 space-y-2 text-sm text-zinc-700">${items
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("")}</ul>`;
+}
+
+function showProfile(profile, cleanedCv) {
+  const nameEl = document.getElementById("profile-name");
+  const titleEl = document.getElementById("profile-title");
+  const sectionsEl = document.getElementById("profile-sections");
+  const statusEl = document.getElementById("profile-status");
+  const cleanedEl = document.getElementById("cleaned-cv");
+
+  if (!sectionsEl) {
+    return;
+  }
+
+  nameEl.textContent = profile.name;
+  titleEl.textContent = profile.headline || "";
+  if (statusEl) {
+    statusEl.textContent = profile.source === "demo" ? "Demo" : "CV organizado";
+  }
+  if (cleanedEl) {
+    cleanedEl.textContent = cleanedCv || "";
+  }
+
+  const experience = (profile.experience || []).map((item) => {
+    const heading = [item.position, item.company].filter(Boolean).join(" · ");
+    return item.description ? `${heading}: ${item.description}` : heading;
+  });
+  const education = (profile.education || []).map((item) =>
+    [item.degree, item.field, item.institution].filter(Boolean).join(" · ")
+  );
+  const languages = (profile.languages || []).map((item) =>
+    [item.language, item.level].filter(Boolean).join(" · ")
+  );
+  const certifications = (profile.certifications || []).map((item) => item.name);
+  const projects = (profile.projects || []).map((item) => item.name);
+
+  const sections = [
+    ["Perfil profesional", `<p class="mt-3 text-sm leading-6 text-zinc-700">${escapeHtml(profile.summary || "—")}</p>`],
+    ["Experiencia", renderList(experience)],
+    ["Habilidades", renderList(profile.skills || [])],
+    ["Educación", renderList(education)],
+    ["Idiomas", renderList(languages)],
+    ["Certificaciones", renderList(certifications)],
+    ["Proyectos", renderList(projects)],
+  ];
+
+  sectionsEl.innerHTML = sections
+    .map(
+      ([title, body]) => `
+        <article class="card p-5">
+          <h2 class="text-sm font-medium">${title}</h2>
+          ${body}
+        </article>
+      `
+    )
+    .join("");
+}
+
 function initUploadPage() {
   const fileInput = document.getElementById("cv-file");
   const uploadButton = document.getElementById("upload-button");
   const fileLabel = document.getElementById("file-label");
   const status = document.getElementById("upload-status");
 
-  if (!fileInput || !uploadButton || !status) {
+  if (!fileInput || !uploadButton) {
     return;
   }
 
@@ -41,50 +105,41 @@ function initUploadPage() {
       return;
     }
 
-    fileLabel.textContent = file.name;
+    if (fileLabel) fileLabel.textContent = file.name;
     uploadButton.disabled = true;
-    renderStatus(
-      status,
-      "loading",
-      "Procesando tu CV",
-      "Extrayendo texto. No guardamos el archivo en disco."
-    );
+    if (status) {
+      renderStatus(
+        status,
+        "loading",
+        "Leyendo y organizando tu CV",
+        "Extraemos el texto y armamos el perfil. El PDF original no se modifica."
+      );
+    }
 
     try {
       const result = await uploadCv(file);
-      const doc = result.document;
-      renderStatus(
-        status,
-        "success",
-        "CV procesado",
-        `
-          <dl class="grid gap-2 sm:grid-cols-2">
-            <div><dt class="text-zinc-500">Archivo</dt><dd>${escapeHtml(doc.filename || file.name)}</dd></div>
-            <div><dt class="text-zinc-500">Páginas</dt><dd>${escapeHtml(doc.pages)}</dd></div>
-            <div><dt class="text-zinc-500">Caracteres</dt><dd>${escapeHtml(doc.characters)}</dd></div>
-            <div><dt class="text-zinc-500">Método</dt><dd>${escapeHtml(doc.extraction_method)}</dd></div>
-          </dl>
-          <button id="analyze-cv" type="button" class="btn-primary mt-4 rounded-xl px-4 py-2 text-sm font-medium">Analizar perfil</button>
-        `
-      );
-      document.getElementById("analyze-cv")?.addEventListener("click", async (event) => {
-        const button = event.currentTarget;
-        button.disabled = true;
-        renderStatus(status, "loading", "Analizando CV", "Una sola lectura con gpt-4o-mini. El original no se modifica.");
-        try {
-          await analyzeCv();
-          window.location.href = "/cv";
-        } catch (error) {
-          renderStatus(status, "error", "No se pudo analizar el CV", escapeHtml(error.message));
-        }
-      });
+      if (status) {
+        renderStatus(
+          status,
+          "success",
+          "CV organizado",
+          `${escapeHtml(result.profile?.name || file.name)} · ${escapeHtml(result.document?.pages)} páginas. El original sigue intacto.`
+        );
+      }
+      if (result.profile && document.getElementById("profile-sections")) {
+        showProfile(result.profile, result.cleaned_cv);
+      } else {
+        window.location.href = "/cv";
+      }
     } catch (error) {
-      renderStatus(
-        status,
-        "error",
-        "No se pudo procesar el CV",
-        escapeHtml(error.message || "Error inesperado.")
-      );
+      if (status) {
+        renderStatus(
+          status,
+          "error",
+          "No se pudo organizar el CV",
+          escapeHtml(error.message || "Error inesperado.")
+        );
+      }
     } finally {
       uploadButton.disabled = false;
       fileInput.value = "";
@@ -92,66 +147,18 @@ function initUploadPage() {
   });
 }
 
-function renderList(items) {
-  return `<ul class="mt-3 space-y-2 text-sm text-zinc-700">${items
-    .map((item) => `<li>${escapeHtml(item)}</li>`)
-    .join("")}</ul>`;
-}
-
 function initProfilePage() {
-  const nameEl = document.getElementById("profile-name");
-  const titleEl = document.getElementById("profile-title");
-  const sectionsEl = document.getElementById("profile-sections");
-  const statusEl = document.getElementById("profile-status");
-
-  if (!sectionsEl) {
+  if (!document.getElementById("profile-sections")) {
     return;
   }
 
   getCandidateProfile()
-    .then((payload) => {
-      const profile = payload.profile;
-      nameEl.textContent = profile.name;
-      titleEl.textContent = profile.headline || "";
-      if (statusEl) {
-        statusEl.textContent = profile.source === "demo" ? "Demo" : "CV analizado";
-      }
-
-      const experience = (profile.experience || []).map((item) =>
-        [item.position, item.company].filter(Boolean).join(" · ")
-      );
-      const education = (profile.education || []).map((item) =>
-        [item.degree, item.field, item.institution].filter(Boolean).join(" · ")
-      );
-      const languages = (profile.languages || []).map((item) =>
-        [item.language, item.level].filter(Boolean).join(" · ")
-      );
-      const certifications = (profile.certifications || []).map((item) => item.name);
-      const projects = (profile.projects || []).map((item) => item.name);
-
-      const sections = [
-        ["Perfil profesional", `<p class="mt-3 text-sm leading-6 text-zinc-700">${escapeHtml(profile.summary || "—")}</p>`],
-        ["Experiencia", renderList(experience)],
-        ["Habilidades", renderList(profile.skills || [])],
-        ["Educación", renderList(education)],
-        ["Idiomas", renderList(languages)],
-        ["Certificaciones", renderList(certifications)],
-        ["Proyectos", renderList(projects)],
-      ];
-
-      sectionsEl.innerHTML = sections
-        .map(
-          ([title, body]) => `
-            <article class="card p-5">
-              <h2 class="text-sm font-medium">${title}</h2>
-              ${body}
-            </article>
-          `
-        )
-        .join("");
-    })
+    .then((payload) => showProfile(payload.profile, payload.cleaned_cv))
     .catch((error) => {
-      sectionsEl.innerHTML = `<p class="text-sm text-red-700">${escapeHtml(error.message)}</p>`;
+      const sectionsEl = document.getElementById("profile-sections");
+      if (sectionsEl) {
+        sectionsEl.innerHTML = `<p class="text-sm text-red-700">${escapeHtml(error.message)}</p>`;
+      }
     });
 }
 

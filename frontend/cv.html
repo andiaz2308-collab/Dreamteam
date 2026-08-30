@@ -55,10 +55,18 @@
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 class="text-2xl font-semibold tracking-tight">CV Maestro</h1>
-            <p class="mt-1 text-sm text-zinc-500">El CV maestro no se modifica. Esta vista muestra el perfil estructurado.</p>
+            <p class="mt-1 text-sm text-zinc-500">Sube un PDF. El original no se cambia; aquí ves el perfil organizado.</p>
           </div>
           <span id="profile-status" class="badge badge-success">CV analizado</span>
         </div>
+
+        <form class="mt-6 flex flex-wrap items-center gap-3">
+          <label for="cv-file" class="sr-only">Subir CV en PDF</label>
+          <input id="cv-file" name="file" type="file" accept="application/pdf,.pdf" class="sr-only" />
+          <button id="upload-button" type="button" class="btn-primary rounded-xl px-4 py-2 text-sm font-medium">Subir y organizar CV</button>
+          <p id="file-label" class="text-sm text-zinc-500">PDF. Tarda unos segundos.</p>
+        </form>
+        <div id="upload-status" class="mt-4" aria-live="polite"></div>
 
         <section class="card mt-8 p-6">
           <p class="text-xs font-medium uppercase tracking-wider text-zinc-400">Candidata</p>
@@ -67,6 +75,12 @@
         </section>
 
         <div id="profile-sections" class="mt-6 grid gap-4 lg:grid-cols-2"></div>
+
+        <section class="card mt-6 p-6">
+          <h2 class="text-sm font-medium">CV organizado</h2>
+          <p class="mt-1 text-sm text-zinc-500">Misma información, ordenada. Sin inventar experiencia.</p>
+          <pre id="cleaned-cv" class="mt-4 whitespace-pre-wrap text-sm leading-6 text-zinc-700"></pre>
+        </section>
       </main>
     </div>
 

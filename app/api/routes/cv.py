@@ -1,6 +1,7 @@
 ﻿from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.services.ai.structured import StructuredOutputError
+from app.services.cv_format import render_cleaned_cv
 from app.services.document.pdf_parser import (
     PDFParserError,
     extract_pdf,
@@ -11,21 +12,31 @@ from app.services.workspace import workspace
 router = APIRouter()
 
 
+def _is_pdf(file: UploadFile, file_bytes: bytes) -> bool:
+    filename = (file.filename or "").lower()
+    content_type = (file.content_type or "").lower()
+    if content_type in {"application/pdf", "application/x-pdf"}:
+        return True
+    if filename.endswith(".pdf"):
+        return True
+    return file_bytes.startswith(b"%PDF")
+
+
 @router.post("/cv/upload")
 async def upload_cv(file: UploadFile = File(...)):
-    if file.content_type != "application/pdf":
+    file_bytes = await file.read()
+
+    if not _is_pdf(file, file_bytes):
         raise HTTPException(
             status_code=400,
             detail="Solo se permiten archivos PDF."
         )
 
-    file_bytes = await file.read()
-
     try:
         document = extract_pdf(
             file_bytes=file_bytes,
             filename=file.filename or "upload.pdf",
-            content_type=file.content_type,
+            content_type=file.content_type or "application/pdf",
         )
     except PDFParserError as exc:
         raise HTTPException(
@@ -41,6 +52,18 @@ async def upload_cv(file: UploadFile = File(...)):
 
     document_id = workspace.save_master_document(document)
 
+    from app.services.ai.cv_analyzer import analyze_cv_text
+
+    try:
+        profile = analyze_cv_text(
+            document.text,
+            workspace.candidate_id,
+        )
+    except StructuredOutputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    workspace.set_profile(profile)
+
     return {
         "status": "success",
         "document_id": document_id,
@@ -53,6 +76,8 @@ async def upload_cv(file: UploadFile = File(...)):
             "extraction_method": document.extraction_method,
             "has_text": document.has_text,
         },
+        "profile": profile.model_dump(mode="json"),
+        "cleaned_cv": render_cleaned_cv(profile),
     }
 
 
@@ -78,4 +103,5 @@ def analyze_cv():
     return {
         "status": "success",
         "profile": profile.model_dump(mode="json"),
+        "cleaned_cv": render_cleaned_cv(profile),
     }

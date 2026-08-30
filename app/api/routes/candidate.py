@@ -1,6 +1,7 @@
 ﻿from fastapi import APIRouter
 
 from app.schemas.candidate import CandidateProfile
+from app.services.cv_format import render_cleaned_cv
 from app.services.workspace import workspace
 
 
@@ -18,7 +19,9 @@ def create_candidate(candidate: CandidateProfile):
 
 @router.get("/api/candidate/profile")
 def get_candidate_profile():
+    profile = workspace.profile
     return {
         "status": "success",
-        "profile": workspace.profile.model_dump(mode="json"),
+        "profile": profile.model_dump(mode="json"),
+        "cleaned_cv": render_cleaned_cv(profile),
     }
