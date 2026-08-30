@@ -55,16 +55,16 @@
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 class="text-2xl font-semibold tracking-tight">CV Maestro</h1>
-            <p class="mt-1 text-sm text-zinc-500">Sube un PDF. El original no se cambia; aquí ves el perfil organizado.</p>
+            <p class="mt-1 text-sm text-zinc-500">Sube PDF o DOCX. El original no se cambia; aquí ves el perfil organizado.</p>
           </div>
           <span id="profile-status" class="badge badge-success">CV analizado</span>
         </div>
 
         <form class="mt-6 flex flex-wrap items-center gap-3">
-          <label for="cv-file" class="sr-only">Subir CV en PDF</label>
-          <input id="cv-file" name="file" type="file" accept="application/pdf,.pdf" class="sr-only" />
+          <label for="cv-file" class="sr-only">Subir CV en PDF o DOCX</label>
+          <input id="cv-file" name="file" type="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="sr-only" />
           <button id="upload-button" type="button" class="btn-primary rounded-xl px-4 py-2 text-sm font-medium">Subir y organizar CV</button>
-          <p id="file-label" class="text-sm text-zinc-500">PDF. Tarda unos segundos.</p>
+          <p id="file-label" class="text-sm text-zinc-500">PDF o DOCX. Tarda unos segundos.</p>
         </form>
         <div id="upload-status" class="mt-4" aria-live="polite"></div>
 

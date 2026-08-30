@@ -54,14 +54,14 @@
         </ul>
 
         <form id="upload-form" class="mt-10">
-          <label for="cv-file" class="sr-only">Seleccionar CV en PDF</label>
-          <input id="cv-file" name="file" type="file" accept="application/pdf,.pdf" class="sr-only" />
+          <label for="cv-file" class="sr-only">Seleccionar CV en PDF o DOCX</label>
+          <input id="cv-file" name="file" type="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="sr-only" />
 
           <div class="flex flex-wrap items-center gap-3">
             <button id="upload-button" type="button" class="btn-primary rounded-xl px-5 py-3 text-sm font-medium">
               Subir mi CV
             </button>
-            <p id="file-label" class="text-sm text-zinc-500">PDF, una sola vez. El original no se modifica.</p>
+            <p id="file-label" class="text-sm text-zinc-500">PDF o DOCX, una sola vez. El original no se modifica.</p>
           </div>
         </form>
 

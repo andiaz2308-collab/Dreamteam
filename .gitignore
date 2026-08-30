@@ -11,6 +11,8 @@ __pycache__/
 .idea/
 .vscode/
 *.log
+# tessdata local (archivos grandes; descargar con scripts o winget)
+tessdata/*.traineddata
 
 # dumps locales / notas de trabajo (no subir)
 ESTADO_PROYECTO.md

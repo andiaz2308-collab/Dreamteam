@@ -112,18 +112,29 @@ function initUploadPage() {
         status,
         "loading",
         "Leyendo y organizando tu CV",
-        "Extraemos el texto y armamos el perfil. El PDF original no se modifica."
+        "Extraemos el texto (incluye OCR en PDF escaneado) y armamos el perfil. El archivo original no se modifica."
       );
     }
 
     try {
       const result = await uploadCv(file);
       if (status) {
+        const method = result.document?.extraction_method;
+        const methodLabel =
+          method === "pymupdf+ocr" || method === "pymupdf+ocr-mixed"
+            ? " · lectura OCR"
+            : method === "python-docx"
+              ? " · DOCX"
+              : "";
+        const pages =
+          result.document?.pages != null
+            ? `${result.document.pages} páginas`
+            : `${result.document?.characters ?? 0} caracteres`;
         renderStatus(
           status,
           "success",
           "CV organizado",
-          `${escapeHtml(result.profile?.name || file.name)} · ${escapeHtml(result.document?.pages)} páginas. El original sigue intacto.`
+          `${escapeHtml(result.profile?.name || file.name)} · ${escapeHtml(pages)}${escapeHtml(methodLabel)}. El original sigue intacto.`
         );
       }
       if (result.profile && document.getElementById("profile-sections")) {
