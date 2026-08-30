@@ -1,4 +1,4 @@
-# AgenteCV (Dreamteam)
+# Dreamteam — AgenteCV
 
 Agente personal de búsqueda laboral.
 
