@@ -27,7 +27,11 @@ Render free suele fallar en `pushing layers` con la imagen Docker + Tesseract
 2. Runtime: **Python** (no Docker)
 3. Build: `pip install -r requirements.txt`
 4. Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Env: `OPENAI_API_KEY`, `OPENAI_MODEL`, Supabase, `AGENT_USER_ID`
+5. Env **obligatoria**: `PYTHON_VERSION` = `3.12.8`
+   (si no, Render usa 3.14 y `pydantic` falla al compilar)
+6. Env app: `OPENAI_API_KEY`, `OPENAI_MODEL`, Supabase, `AGENT_USER_ID`
+
+También hay `.python-version` y `runtime.txt` en el repo apuntando a 3.12.8.
 
 Limitación: **sin OCR** de PDF escaneado en este host.
 PDF con texto y DOCX sí funcionan. OCR queda en local / Docker completo.
