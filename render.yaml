@@ -1,13 +1,17 @@
-# Opción A: Docker (OCR + Tesseract). Preferida si el push de imagen funciona.
+# Render free: runtime Python (sin Docker).
+# Evita el fallo "pushing layers" de imágenes grandes con Tesseract.
+# OCR de PDF escaneado no estará en este host; PDF con texto y DOCX sí.
 services:
   - type: web
     name: agentecv
-    runtime: docker
+    runtime: python
     plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
       - key: OPENAI_MODEL
         value: gpt-4o-mini
       - key: OPENAI_API_KEY

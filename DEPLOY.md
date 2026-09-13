@@ -18,6 +18,22 @@ Variables (desde `.env`, no las subas a GitHub):
 - `OPENAI_MODEL` (opcional, default `gpt-4o-mini`)
 - `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` (cuando conectemos persistencia)
 
+## Opción C — Render free (sin Docker)
+
+Render free suele fallar en `pushing layers` con la imagen Docker + Tesseract
+(muy pesada). Usa **Python nativo**:
+
+1. New Web Service → repo Dreamteam
+2. Runtime: **Python** (no Docker)
+3. Build: `pip install -r requirements.txt`
+4. Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. Env: `OPENAI_API_KEY`, `OPENAI_MODEL`, Supabase, `AGENT_USER_ID`
+
+Limitación: **sin OCR** de PDF escaneado en este host.
+PDF con texto y DOCX sí funcionan. OCR queda en local / Docker completo.
+
+`render.yaml` ya está configurado así.
+
 ## Opción A — Hugging Face Spaces (recomendada, gratis)
 
 1. Entra a https://huggingface.co/new-space
