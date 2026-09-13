@@ -2,6 +2,8 @@
 
 Agente personal de búsqueda laboral.
 
+Documentación del funcionamiento completo: [`FUNCIONAMIENTO.md`](FUNCIONAMIENTO.md).
+
 ## Flujo
 
 1. Subir CV maestro (PDF)
