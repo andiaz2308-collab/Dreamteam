@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.core.config import OPENAI_API_KEY, OPENAI_MODEL
+from app.core.config import OPENAI_API_KEY, OPENAI_MODEL, supabase_configured
 from app.services.ai.usage import ai_status
+from app.services.persistence import ensure_agent_user_id, persistence_enabled
 from app.services.workspace import workspace
 
 
@@ -22,7 +23,11 @@ def get_settings():
             "openai_configured": bool(OPENAI_API_KEY),
             "apply_mode": workspace.apply_mode,
             "automation_enabled": False,
-            "persistence": "memory",
+            "persistence": "supabase" if persistence_enabled() else "memory",
+            "supabase_configured": supabase_configured(),
+            "supabase_user_ready": bool(ensure_agent_user_id())
+            if persistence_enabled()
+            else False,
             "auth_enabled": False,
             "has_profile": workspace.has_profile(),
             "candidate_name": (

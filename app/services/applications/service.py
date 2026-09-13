@@ -60,6 +60,10 @@ class ApplicationStore:
         self._items[application.id] = application
         return application
 
+    def upsert(self, application: Application) -> Application:
+        self._items[application.id] = application
+        return application
+
     def get(self, application_id: str) -> Application | None:
         return self._items.get(application_id)
 
@@ -171,12 +175,31 @@ class ApplicationService:
             application.error_message = str(exc)
             application.updated_at = datetime.now(timezone.utc)
 
-        return self.store.update(application)
+        updated = self.store.update(application)
+        self._persist(updated)
+        return updated
 
     def create_and_queue(self, payload: ApplicationCreate) -> Application:
         application = self.create(payload)
         self.enqueue(application.id)
         return self.process(application.id)
+
+    def _persist(self, application: Application) -> None:
+        try:
+            from app.services.persistence import (
+                ensure_agent_user_id,
+                persistence_enabled,
+                save_application,
+            )
+
+            if not persistence_enabled():
+                return
+            user_id = ensure_agent_user_id()
+            if not user_id:
+                return
+            save_application(user_id=user_id, application=application)
+        except Exception:
+            return
 
     def retry(self, application_id: str) -> Application:
         application = self._require(application_id)
@@ -197,28 +220,52 @@ class ApplicationService:
             )
 
         adapted_cv_text = None
+        job_id = application.job_id
+        matched: list[str] = []
+        missing: list[str] = []
+        docx_url = None
+        docx_filename = None
         try:
+            from app.services.cv_docx import docx_download_name
             from app.services.workspace import workspace
 
             customized = workspace.customized.get(application.customized_cv_id)
             if customized is not None:
                 adapted_cv_text = customized.rendered_text
+                job_id = customized.job_id or application.job_id
+            job = workspace.jobs.get(job_id) if job_id else None
+            match = workspace.matches.get(job_id) if job_id else None
+            profile = workspace.profile
+            if match is not None:
+                matched = [item.label for item in match.matched]
+                missing = [item.label for item in match.missing]
+            if job is not None:
+                docx_url = f"/api/jobs/{job.id}/adapted-cv.docx"
+                docx_filename = docx_download_name(job, profile)
         except Exception:
             adapted_cv_text = None
 
         checklist = [
-            "Revisa el CV adaptado antes de enviar.",
-            "Copia o descarga el texto del CV.",
-            "Postula manualmente en la URL de la oferta.",
+            "Descarga el CV adaptado en DOCX (listo para adjuntar).",
+            "Revisa el match y los requisitos faltantes.",
+            "Abre la URL de la oferta y postula manualmente.",
             "El CV maestro no fue modificado.",
         ]
         if application.job_url:
             checklist.insert(2, f"Abrir oferta: {application.job_url}")
 
+        steps = [
+            "1. Descarga el DOCX del CV adaptado.",
+            "2. Revisa el texto y ajusta solo si es necesario (sin inventar).",
+            "3. Entra al portal de la oferta.",
+            "4. Adjunta el DOCX y completa el formulario.",
+            "5. Marca mentalmente esta postulación como enviada cuando termines.",
+        ]
+
         return ApplicationReview(
             message=(
-                "Paquete de postulación listo. Usa el CV adaptado "
-                "para aplicar de forma manual."
+                "Paquete de postulación listo. Descarga el CV en DOCX "
+                "y aplica de forma manual en el portal."
             ),
             status=application.status,
             job_url=application.job_url,
@@ -230,6 +277,13 @@ class ApplicationService:
             notes=application.notes,
             adapted_cv_text=adapted_cv_text,
             checklist=checklist,
+            job_id=job_id,
+            match_percent=application.match_percent,
+            matched=matched,
+            missing=missing,
+            docx_url=docx_url,
+            docx_filename=docx_filename,
+            steps=steps,
         )
 
     def list(self) -> list[Application]:

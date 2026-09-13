@@ -43,7 +43,13 @@ getSettings()
         ? `Perfil activo: ${settings.candidate_name}.`
         : "Aún no hay CV subido.";
       persistence.textContent =
-        `Hoy los datos viven en memoria del servidor. Auth y Supabase son el siguiente bloque. ${who}`;
+        settings.persistence === "supabase"
+          ? `Persistencia Supabase activa. ${who}${
+              settings.supabase_user_ready
+                ? ""
+                : " Falta AGENT_USER_ID (UUID del usuario Auth)."
+            }`
+          : `Hoy los datos viven en memoria del servidor. ${who}`;
     }
   })
   .catch(() => {

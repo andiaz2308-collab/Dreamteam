@@ -1,4 +1,5 @@
-﻿from pathlib import Path
+﻿from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
@@ -15,10 +16,20 @@ from app.api.routes.settings import router as settings_router
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    from app.services.persistence import bootstrap_persistence
+
+    result = bootstrap_persistence()
+    _app.state.persistence = result
+    yield
+
+
 app = FastAPI(
     title="AgenteCV",
     description="AI agent for CV optimization and job applications",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 

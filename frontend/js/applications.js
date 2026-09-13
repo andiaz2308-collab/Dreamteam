@@ -131,19 +131,28 @@ function showReview(review) {
   const checklist = (review.checklist || [])
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
+  const steps = (review.steps || [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
 
   body.innerHTML = `
     <p class="text-sm font-medium">${escapeHtml(review.message)}</p>
     <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
       <div><dt class="text-zinc-500">Empresa</dt><dd>${escapeHtml(review.company)}</dd></div>
       <div><dt class="text-zinc-500">Cargo</dt><dd>${escapeHtml(review.position)}</dd></div>
+      <div><dt class="text-zinc-500">Match</dt><dd>${review.match_percent != null ? `${review.match_percent}%` : "—"}</dd></div>
       <div><dt class="text-zinc-500">URL</dt><dd>${
         review.job_url
           ? `<a class="text-primary underline" href="${escapeHtml(review.job_url)}" target="_blank" rel="noopener">${escapeHtml(review.job_url)}</a>`
           : "—"
       }</dd></div>
-      <div><dt class="text-zinc-500">Notas</dt><dd>${escapeHtml(review.notes || "—")}</dd></div>
+      <div class="sm:col-span-2"><dt class="text-zinc-500">Notas</dt><dd>${escapeHtml(review.notes || "—")}</dd></div>
     </dl>
+    ${
+      steps
+        ? `<ol class="mt-4 list-decimal space-y-1 pl-5 text-sm text-zinc-600">${steps}</ol>`
+        : ""
+    }
     ${
       checklist
         ? `<ul class="mt-4 list-disc space-y-1 pl-5 text-sm text-zinc-600">${checklist}</ul>`
@@ -155,7 +164,14 @@ function showReview(review) {
       <div class="mt-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <p class="text-sm font-medium">CV adaptado</p>
-          <button type="button" id="review-download-cv" class="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium hover:bg-zinc-50">Descargar .txt</button>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="review-download-cv" class="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium hover:bg-zinc-50">Descargar .txt</button>
+            ${
+              review.docx_url
+                ? `<a href="${escapeHtml(review.docx_url)}" class="btn-primary rounded-lg px-3 py-1.5 text-sm font-medium">Descargar .docx</a>`
+                : ""
+            }
+          </div>
         </div>
         <pre class="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl border border-zinc-200 bg-canvas p-3 text-sm leading-6 text-zinc-700">${escapeHtml(review.adapted_cv_text)}</pre>
       </div>`

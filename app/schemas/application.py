@@ -86,6 +86,13 @@ class ApplicationReview(BaseModel):
     notes: str | None = None
     adapted_cv_text: str | None = None
     checklist: list[str] = Field(default_factory=list)
+    job_id: str | None = None
+    match_percent: int | None = None
+    matched: list[str] = Field(default_factory=list)
+    missing: list[str] = Field(default_factory=list)
+    docx_url: str | None = None
+    docx_filename: str | None = None
+    steps: list[str] = Field(default_factory=list)
 
 
 class ApplicationStats(BaseModel):

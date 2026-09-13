@@ -381,8 +381,8 @@ agentecv/
 - Perfil estructurado con IA (estricto)
 - Ofertas con IA
 - Match y CV adaptado con IA
-- Descarga/copia de CV adaptado (`.txt`)
-- Paquete de postulación + revisión manual
+- Descarga/copia de CV adaptado (`.txt` y **`.docx`**)
+- Paquete de postulación enriquecido (match, pasos, checklist, adjuntos)
 - UI sin datos demo hasta subir CV
 - Docker + guía de deploy
 
@@ -390,7 +390,7 @@ agentecv/
 
 - **Supabase**: persistir perfil, ofertas, CVs y archivos (`cv-files`)
 - Auth (email) ligada a `user_id`
-- Descarga **PDF** del CV adaptado (hoy es texto)
+- Descarga **PDF** del CV adaptado (hoy texto + DOCX)
 - Providers de postulación directa cuando exista ATS/API permitido
 - Deploy estable en host free (Cloud Run / Fly / Northflank / HF / Koyeb según plan)
 

@@ -10,6 +10,8 @@ import {
 let lastAdapted = {
   text: "",
   filename: "CV_adaptado.txt",
+  docxUrl: "",
+  jobId: "",
 };
 
 function escapeHtml(value) {
@@ -38,37 +40,95 @@ function downloadText(filename, text) {
   URL.revokeObjectURL(url);
 }
 
-function showAdaptedCv({ text, meta, filename, packageData }) {
+function chipList(items, emptyLabel) {
+  if (!items?.length) {
+    return `<p class="text-sm text-zinc-500">${escapeHtml(emptyLabel)}</p>`;
+  }
+  return `<div class="mt-1 flex flex-wrap gap-2">${items
+    .map((item) => `<span class="badge badge-neutral">${escapeHtml(item)}</span>`)
+    .join("")}</div>`;
+}
+
+function showAdaptedCv({ text, meta, filename, docxUrl, jobId, packageData }) {
   const panel = document.getElementById("adapted-panel");
   const textEl = document.getElementById("adapted-cv-text");
   const metaEl = document.getElementById("adapted-meta");
   const packageBox = document.getElementById("package-box");
   const checklist = document.getElementById("package-checklist");
+  const stepsEl = document.getElementById("package-steps");
+  const summaryEl = document.getElementById("package-summary");
   const actionStatus = document.getElementById("adapted-action-status");
+  const docxBtn = document.getElementById("adapted-download-docx");
+  const packageDocx = document.getElementById("package-docx-link");
+  const packageJob = document.getElementById("package-job-link");
 
   if (!panel || !textEl) return;
 
   lastAdapted = {
     text: text || "",
     filename: filename || "CV_adaptado.txt",
+    docxUrl: docxUrl || "",
+    jobId: jobId || "",
   };
 
   panel.classList.remove("hidden");
   textEl.textContent = lastAdapted.text;
   if (metaEl) metaEl.textContent = meta || "";
 
+  if (docxBtn) {
+    if (lastAdapted.docxUrl) {
+      docxBtn.href = lastAdapted.docxUrl;
+      docxBtn.classList.remove("pointer-events-none", "opacity-50");
+    } else {
+      docxBtn.href = "#";
+      docxBtn.classList.add("pointer-events-none", "opacity-50");
+    }
+  }
+
   if (packageBox && checklist) {
     if (packageData) {
       packageBox.classList.remove("hidden");
+      if (summaryEl) {
+        summaryEl.innerHTML = `
+          <div><dt class="text-zinc-500">Candidato</dt><dd class="font-medium">${escapeHtml(packageData.candidate_name || "—")}</dd></div>
+          <div><dt class="text-zinc-500">Empresa</dt><dd class="font-medium">${escapeHtml(packageData.company || "—")}</dd></div>
+          <div><dt class="text-zinc-500">Cargo</dt><dd class="font-medium">${escapeHtml(packageData.position || "—")}</dd></div>
+          <div><dt class="text-zinc-500">Match</dt><dd class="font-medium">${packageData.match_percent != null ? `${packageData.match_percent}%` : "—"}</dd></div>
+          <div class="sm:col-span-2"><dt class="text-zinc-500">Resumen del match</dt><dd class="mt-1">${escapeHtml(packageData.match_summary || "—")}</dd></div>
+          <div class="sm:col-span-2"><dt class="text-zinc-500">Alineado</dt>${chipList(packageData.matched, "Sin coincidencias explícitas")}</div>
+          <div class="sm:col-span-2"><dt class="text-zinc-500">Falta / revisar</dt>${chipList(packageData.missing, "Sin brechas listadas")}</div>
+        `;
+      }
+      if (stepsEl) {
+        stepsEl.innerHTML = (packageData.steps || [])
+          .map((item) => `<li>${escapeHtml(item)}</li>`)
+          .join("");
+      }
       checklist.innerHTML = (packageData.checklist || [])
         .map((item) => `<li>${escapeHtml(item)}</li>`)
         .join("");
+
+      const docx = packageData.docx_url || lastAdapted.docxUrl;
+      if (packageDocx && docx) {
+        packageDocx.href = docx;
+        packageDocx.classList.remove("hidden");
+      }
+      if (packageJob) {
+        if (packageData.job_url) {
+          packageJob.href = packageData.job_url;
+          packageJob.classList.remove("hidden");
+        } else {
+          packageJob.classList.add("hidden");
+        }
+      }
       if (actionStatus) {
         actionStatus.textContent = packageData.next_step || "Postulación preparada.";
       }
     } else {
       packageBox.classList.add("hidden");
       checklist.innerHTML = "";
+      if (stepsEl) stepsEl.innerHTML = "";
+      if (summaryEl) summaryEl.innerHTML = "";
       if (actionStatus) actionStatus.textContent = "";
     }
   }
@@ -85,6 +145,9 @@ function renderOpportunities(items) {
       const adapted = item.has_adapted_cv
         ? `<span class="badge badge-success">CV adaptado listo</span>`
         : "";
+      const docx = item.docx_url
+        ? `<a class="text-sm font-medium text-primary" href="${escapeHtml(item.docx_url)}">Descargar DOCX</a>`
+        : "";
       return `
         <article class="card flex flex-col p-5" data-job-id="${item.id}">
           <div class="flex items-start justify-between gap-3">
@@ -94,7 +157,7 @@ function renderOpportunities(items) {
             </div>
             <p class="text-sm font-semibold ${score == null ? "text-zinc-400" : matchClass(score)}">${score == null ? "—" : `${score}% compatible`}</p>
           </div>
-          <div class="mt-3">${adapted}</div>
+          <div class="mt-3 flex flex-wrap items-center gap-3">${adapted}${docx}</div>
           <div class="mt-4 flex flex-wrap gap-2">
             ${skills.map((skill) => `<span class="badge badge-neutral">${escapeHtml(skill)}</span>`).join("")}
           </div>
@@ -191,22 +254,26 @@ document.getElementById("opportunity-list")?.addEventListener("click", async (ev
     if (customizeId) {
       status.textContent = "Adaptando CV con OpenAI (puede tardar unos segundos)...";
       const payload = await customizeJobCv(customizeId);
-      status.textContent = "CV adaptado con IA. Puedes copiarlo o descargarlo abajo.";
+      status.textContent = "CV adaptado listo. Descarga DOCX para adjuntarlo.";
       showAdaptedCv({
         text: payload.adapted_cv_text || payload.customized_cv?.rendered_text,
         meta: payload.customized_cv?.notes || "CV adaptado sin inventar datos.",
-        filename: payload.download_name,
+        filename: payload.download_name_txt || payload.download_name,
+        docxUrl: payload.docx_url,
+        jobId: customizeId,
       });
       await reloadJobs();
     }
     if (applyId) {
-      status.textContent = "Preparando postulación (match/CV con IA si hace falta)...";
+      status.textContent = "Preparando paquete completo (match/CV/DOCX)...";
       const payload = await applyToJob(applyId);
-      status.textContent = "Postulación preparada. Revisa el paquete abajo.";
+      status.textContent = "Postulación preparada. Descarga el DOCX y sigue los pasos.";
       showAdaptedCv({
         text: payload.adapted_cv_text || payload.package?.adapted_cv_text,
         meta: `${payload.package?.company || ""} · ${payload.package?.position || ""} · ${payload.package?.match_percent ?? ""}%`,
-        filename: `CV_${(payload.package?.company || "empresa").replaceAll(" ", "_")}.txt`,
+        filename: payload.download_name_txt || payload.package?.download_name_txt,
+        docxUrl: payload.docx_url || payload.package?.docx_url,
+        jobId: applyId,
         packageData: payload.package,
       });
       await reloadJobs();

@@ -6,6 +6,12 @@ from app.services.document.document_extractor import (
     DocumentExtractorError,
     extract_document,
 )
+from app.services.persistence import (
+    ensure_agent_user_id,
+    persistence_enabled,
+    save_candidate_profile,
+    save_master_cv,
+)
 from app.services.workspace import workspace
 
 
@@ -22,6 +28,33 @@ def _document_payload(document) -> dict:
         "extraction_method": document.extraction_method,
         "has_text": document.has_text,
     }
+
+
+def _persist_profile(document, file_bytes: bytes | None, profile) -> str | None:
+    if not persistence_enabled():
+        return None
+    user_id = ensure_agent_user_id()
+    if not user_id:
+        return "missing_user"
+    try:
+        doc_id = save_master_cv(
+            user_id=user_id,
+            document=document,
+            file_bytes=file_bytes,
+            document_id=workspace.master_document_id,
+        )
+        workspace.master_document_id = doc_id
+        profile_id = save_candidate_profile(
+            user_id=user_id,
+            profile=profile,
+            master_document_id=doc_id,
+        )
+        workspace.candidate_id = profile_id
+        profile.id = profile_id
+        workspace.profile = profile
+        return "saved"
+    except Exception as exc:
+        return f"error:{exc}"
 
 
 @router.post("/cv/upload")
@@ -55,13 +88,16 @@ async def upload_cv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     workspace.set_profile(profile)
+    persist_status = _persist_profile(document, file_bytes, workspace.profile)
 
     return {
         "status": "success",
-        "document_id": document_id,
+        "document_id": workspace.master_document_id or document_id,
         "document": _document_payload(document),
-        "profile": profile.model_dump(mode="json"),
-        "cleaned_cv": render_cleaned_cv(profile),
+        "profile": workspace.profile.model_dump(mode="json"),
+        "cleaned_cv": render_cleaned_cv(workspace.profile),
+        "persisted": persist_status == "saved",
+        "persist_status": persist_status,
     }
 
 
@@ -84,8 +120,11 @@ def analyze_cv():
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     workspace.set_profile(profile)
+    persist_status = _persist_profile(workspace.master_document, None, workspace.profile)
     return {
         "status": "success",
-        "profile": profile.model_dump(mode="json"),
-        "cleaned_cv": render_cleaned_cv(profile),
+        "profile": workspace.profile.model_dump(mode="json"),
+        "cleaned_cv": render_cleaned_cv(workspace.profile),
+        "persisted": persist_status == "saved",
+        "persist_status": persist_status,
     }

@@ -2,7 +2,8 @@
 
 Agente personal de búsqueda laboral.
 
-Documentación del funcionamiento completo: [`FUNCIONAMIENTO.md`](FUNCIONAMIENTO.md).
+Documentación del funcionamiento completo: [`FUNCIONAMIENTO.md`](FUNCIONAMIENTO.md).  
+Setup Supabase (bucket + usuario): [`SUPABASE_SETUP.md`](SUPABASE_SETUP.md).
 
 ## Flujo
 
