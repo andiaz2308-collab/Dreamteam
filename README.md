@@ -33,13 +33,24 @@ Abrir: http://127.0.0.1:8000
 | `SUPABASE_URL` | Backend (próximo bloque) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Solo backend, nunca frontend |
 
+## Docker (local)
+
+```powershell
+docker compose up --build
+```
+
+Abre: http://127.0.0.1:7860
+
 ## Deploy gratuito (recomendado)
 
-**Koyeb** o **Hugging Face Spaces** con el `Dockerfile` del repo.
+**Hugging Face Spaces** o **Koyeb** con el `Dockerfile` del repo.
 
-Variables en el panel del host: `OPENAI_API_KEY`, `OPENAI_MODEL`.
+Guía paso a paso: [`DEPLOY.md`](DEPLOY.md)
 
-> Render free se duerme; si tu cuenta está suspendida, usar Koyeb/HF.
+Variables en el panel del host (Secrets): `OPENAI_API_KEY`, `OPENAI_MODEL`.
+
+> Vercel/Netlify no sirven para este backend Python + OCR.
+> Render free se duerme; si tu cuenta está suspendida, usar HF/Koyeb.
 
 ## Seguridad
 

@@ -7,6 +7,11 @@ import pymupdf
 OCR_LANGUAGES = "spa+eng"
 TESSDATA_DIR = Path(__file__).resolve().parents[3] / "tessdata"
 WINDOWS_TESSERACT = Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe")
+LINUX_TESSDATA_CANDIDATES = (
+    Path("/usr/share/tesseract-ocr/5/tessdata"),
+    Path("/usr/share/tesseract-ocr/4.00/tessdata"),
+    Path("/usr/share/tessdata"),
+)
 
 
 def _tesseract_path() -> str | None:
@@ -18,19 +23,31 @@ def _tesseract_path() -> str | None:
     return None
 
 
+def _has_lang_data(directory: Path) -> bool:
+    return (directory / "eng.traineddata").exists() and (
+        directory / "spa.traineddata"
+    ).exists()
+
+
 def _tessdata_path() -> str | None:
-    if (TESSDATA_DIR / "eng.traineddata").exists() and (
-        TESSDATA_DIR / "spa.traineddata"
-    ).exists():
+    if _has_lang_data(TESSDATA_DIR):
         return str(TESSDATA_DIR)
 
     program_files = Path(r"C:\Program Files\Tesseract-OCR\tessdata")
     if (program_files / "eng.traineddata").exists():
         return str(program_files)
 
+    for candidate in LINUX_TESSDATA_CANDIDATES:
+        if _has_lang_data(candidate):
+            return str(candidate)
+
     prefix = os.environ.get("TESSDATA_PREFIX")
-    if prefix and Path(prefix).exists():
-        return prefix
+    if prefix:
+        prefix_path = Path(prefix)
+        if _has_lang_data(prefix_path):
+            return str(prefix_path)
+        if prefix_path.exists() and (prefix_path / "eng.traineddata").exists():
+            return str(prefix_path)
 
     return None
 
