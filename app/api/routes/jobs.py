@@ -29,6 +29,13 @@ def _job_or_404(job_id: str):
     return job
 
 
+def _require_profile():
+    try:
+        return workspace.require_profile()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.get("")
 def list_jobs():
     profile = workspace.profile
@@ -51,11 +58,16 @@ def list_jobs():
         )
     return {
         "status": "success",
-        "candidate": {
-            "id": profile.id,
-            "name": profile.name,
-            "headline": profile.headline,
-        },
+        "has_profile": workspace.has_profile(),
+        "candidate": (
+            {
+                "id": profile.id,
+                "name": profile.name,
+                "headline": profile.headline,
+            }
+            if profile is not None
+            else None
+        ),
         "jobs": items,
     }
 
@@ -82,22 +94,22 @@ def create_job_from_text(payload: JobTextPayload):
 
 @router.post("/{job_id}/match")
 def match_job(job_id: str):
+    profile = _require_profile()
     job = _job_or_404(job_id)
-    match = match_profile_to_job(workspace.profile, job)
+    match = match_profile_to_job(profile, job)
     workspace.matches[job.id] = match
     return {"status": "success", "match": match.model_dump(mode="json")}
 
 
 @router.post("/{job_id}/customize")
 def customize_cv(job_id: str):
+    profile = _require_profile()
     job = _job_or_404(job_id)
-    match = workspace.matches.get(job.id) or match_profile_to_job(
-        workspace.profile, job
-    )
+    match = workspace.matches.get(job.id) or match_profile_to_job(profile, job)
     workspace.matches[job.id] = match
-    plan = build_plan(workspace.profile, job, match)
+    plan = build_plan(profile, job, match)
     customized = build_customized_cv(
-        workspace.profile,
+        profile,
         job,
         plan,
         customized_id=str(uuid4()),
@@ -113,6 +125,7 @@ def customize_cv(job_id: str):
 
 @router.post("/{job_id}/apply")
 def apply_to_job(job_id: str):
+    profile = _require_profile()
     job = _job_or_404(job_id)
     match = workspace.matches.get(job.id)
     customized = next(
@@ -127,7 +140,7 @@ def apply_to_job(job_id: str):
 
     application = application_service.create_and_queue(
         ApplicationCreate(
-            candidate_id=workspace.profile.id,
+            candidate_id=profile.id,
             job_id=job.id,
             customized_cv_id=customized.id,
             company=job.company,

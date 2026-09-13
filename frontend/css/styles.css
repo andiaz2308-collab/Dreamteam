@@ -82,6 +82,11 @@ input:focus-visible {
   color: #b42318;
 }
 
+.badge-neutral {
+  background: rgba(113, 113, 122, 0.12);
+  color: #52525b;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

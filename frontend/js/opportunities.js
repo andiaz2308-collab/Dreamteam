@@ -56,7 +56,24 @@ async function reloadJobs() {
   const list = document.getElementById("opportunity-list");
   if (!list) return;
   const payload = await listJobs();
-  list.innerHTML = renderOpportunities(payload.jobs || []);
+  const jobs = payload.jobs || [];
+  if (!payload.has_profile) {
+    list.innerHTML = `
+      <article class="card p-5 lg:col-span-2">
+        <h2 class="text-base font-semibold">Primero sube tu CV</h2>
+        <p class="mt-2 text-sm text-zinc-600">Sin perfil no hay matching. Ve a <a class="text-primary underline" href="/cv">Mi CV</a>, sube tu PDF o DOCX y vuelve aquí.</p>
+      </article>
+    `;
+    if (jobs.length) {
+      list.innerHTML += renderOpportunities(jobs);
+    }
+    return;
+  }
+  if (!jobs.length) {
+    list.innerHTML = `<p class="text-sm text-zinc-500">No hay ofertas todavía. Pega una oferta abajo para analizarla.</p>`;
+    return;
+  }
+  list.innerHTML = renderOpportunities(jobs);
 }
 
 initShell();

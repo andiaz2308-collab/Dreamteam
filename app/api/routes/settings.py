@@ -22,7 +22,10 @@ def get_settings():
             "automation_enabled": False,
             "persistence": "memory",
             "auth_enabled": False,
-            "candidate_demo": "Andreina Díaz Durán",
+            "has_profile": workspace.has_profile(),
+            "candidate_name": (
+                workspace.profile.name if workspace.has_profile() else None
+            ),
         },
     }
 

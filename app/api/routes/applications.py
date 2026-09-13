@@ -9,7 +9,6 @@ from app.services.applications.service import (
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 service = ApplicationService()
-service.seed_demo()
 
 
 def _http_error(exc: ApplicationError) -> HTTPException:

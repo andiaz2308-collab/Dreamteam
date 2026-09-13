@@ -32,6 +32,35 @@ function renderList(items) {
     .join("")}</ul>`;
 }
 
+function showEmptyProfile() {
+  const nameEl = document.getElementById("profile-name");
+  const titleEl = document.getElementById("profile-title");
+  const sectionsEl = document.getElementById("profile-sections");
+  const statusEl = document.getElementById("profile-status");
+  const cleanedEl = document.getElementById("cleaned-cv");
+
+  if (nameEl) nameEl.textContent = "Sin CV todavía";
+  if (titleEl) titleEl.textContent = "Sube un PDF o DOCX para organizar tu perfil.";
+  if (statusEl) {
+    statusEl.textContent = "Pendiente";
+    statusEl.className = "badge badge-neutral";
+  }
+  if (cleanedEl) {
+    cleanedEl.textContent =
+      "Cuando subas tu hoja de vida, aquí aparecerá el CV organizado. No se muestra ningún perfil de prueba.";
+  }
+  if (sectionsEl) {
+    sectionsEl.innerHTML = `
+      <article class="card p-5 lg:col-span-2">
+        <h2 class="text-sm font-medium">Esperando tu CV</h2>
+        <p class="mt-3 text-sm leading-6 text-zinc-600">
+          AgenteCV no muestra nombres ni datos de demostración. El perfil aparece solo después de subir y analizar tu archivo.
+        </p>
+      </article>
+    `;
+  }
+}
+
 function showProfile(profile, cleanedCv) {
   const nameEl = document.getElementById("profile-name");
   const titleEl = document.getElementById("profile-title");
@@ -46,7 +75,8 @@ function showProfile(profile, cleanedCv) {
   nameEl.textContent = profile.name;
   titleEl.textContent = profile.headline || "";
   if (statusEl) {
-    statusEl.textContent = profile.source === "demo" ? "Demo" : "CV organizado";
+    statusEl.textContent = "CV organizado";
+    statusEl.className = "badge badge-success";
   }
   if (cleanedEl) {
     cleanedEl.textContent = cleanedCv || "";
@@ -164,7 +194,13 @@ function initProfilePage() {
   }
 
   getCandidateProfile()
-    .then((payload) => showProfile(payload.profile, payload.cleaned_cv))
+    .then((payload) => {
+      if (!payload.has_profile || !payload.profile) {
+        showEmptyProfile();
+        return;
+      }
+      showProfile(payload.profile, payload.cleaned_cv);
+    })
     .catch((error) => {
       const sectionsEl = document.getElementById("profile-sections");
       if (sectionsEl) {

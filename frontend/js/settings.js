@@ -16,8 +16,11 @@ getSettings()
           : settings.apply_mode;
     }
     if (persistence) {
+      const who = settings.candidate_name
+        ? `Perfil activo: ${settings.candidate_name}.`
+        : "Aún no hay CV subido.";
       persistence.textContent =
-        "Hoy los datos viven en memoria del servidor. Auth y Supabase son el siguiente bloque. Demo activa: Andreina Díaz Durán.";
+        `Hoy los datos viven en memoria del servidor. Auth y Supabase son el siguiente bloque. ${who}`;
     }
   })
   .catch(() => {
