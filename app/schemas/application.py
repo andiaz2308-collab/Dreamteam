@@ -84,6 +84,8 @@ class ApplicationReview(BaseModel):
     cover_letter_id: str | None = None
     answers: list[str] = Field(default_factory=list)
     notes: str | None = None
+    adapted_cv_text: str | None = None
+    checklist: list[str] = Field(default_factory=list)
 
 
 class ApplicationStats(BaseModel):

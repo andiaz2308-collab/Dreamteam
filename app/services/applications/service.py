@@ -195,8 +195,31 @@ class ApplicationService:
             raise ApplicationError(
                 "Esta postulación no está lista para revisión."
             )
+
+        adapted_cv_text = None
+        try:
+            from app.services.workspace import workspace
+
+            customized = workspace.customized.get(application.customized_cv_id)
+            if customized is not None:
+                adapted_cv_text = customized.rendered_text
+        except Exception:
+            adapted_cv_text = None
+
+        checklist = [
+            "Revisa el CV adaptado antes de enviar.",
+            "Copia o descarga el texto del CV.",
+            "Postula manualmente en la URL de la oferta.",
+            "El CV maestro no fue modificado.",
+        ]
+        if application.job_url:
+            checklist.insert(2, f"Abrir oferta: {application.job_url}")
+
         return ApplicationReview(
-            message="Esta postulación está lista para revisión.",
+            message=(
+                "Paquete de postulación listo. Usa el CV adaptado "
+                "para aplicar de forma manual."
+            ),
             status=application.status,
             job_url=application.job_url,
             company=application.company,
@@ -205,6 +228,8 @@ class ApplicationService:
             cover_letter_id=application.cover_letter_id,
             answers=list(application.answers),
             notes=application.notes,
+            adapted_cv_text=adapted_cv_text,
+            checklist=checklist,
         )
 
     def list(self) -> list[Application]:

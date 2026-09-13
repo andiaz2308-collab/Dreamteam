@@ -80,10 +80,9 @@ class ApplicationEngineTests(unittest.TestCase):
         )
 
         review = service.review(processed.id)
-        self.assertEqual(
-            review.message,
-            "Esta postulación está lista para revisión.",
-        )
+        self.assertIn("CV adaptado", review.message)
+        self.assertEqual(review.company, "Empresa X")
+        self.assertTrue(review.checklist)
 
     def test_provider_error_marks_application_failed(self):
         service = ApplicationService(

@@ -5,12 +5,10 @@ from pydantic import BaseModel
 
 from app.api.routes.applications import service as application_service
 from app.schemas.application import ApplicationCreate
+from app.services.ai.cv_customizer_ai import customize_cv_with_ai
+from app.services.ai.job_matcher_ai import match_profile_to_job_ai
 from app.services.ai.structured import StructuredOutputError
-from app.services.matching.job_matcher import match_profile_to_job
-from app.services.optimization.cv_optimizer import (
-    build_customized_cv,
-    build_plan,
-)
+from app.services.optimization.cv_optimizer import build_plan
 from app.services.workspace import workspace
 
 
@@ -36,24 +34,79 @@ def _require_profile():
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _ensure_match_and_customized(job_id: str):
+    profile = _require_profile()
+    job = _job_or_404(job_id)
+    match = workspace.matches.get(job.id)
+    if match is None:
+        match = match_profile_to_job_ai(profile, job)
+        workspace.matches[job.id] = match
+
+    customized = next(
+        (cv for cv in workspace.customized.values() if cv.job_id == job.id),
+        None,
+    )
+    if customized is None:
+        plan = build_plan(profile, job, match)
+        customized = customize_cv_with_ai(
+            profile,
+            job,
+            match,
+            customized_id=str(uuid4()),
+        )
+        workspace.plans[job.id] = plan
+        workspace.customized[customized.id] = customized
+
+    return profile, job, match, customized
+
+
+def _application_package(application, job, match, customized) -> dict:
+    checklist = [
+        "CV maestro intacto (no se modificó el original).",
+        "CV adaptado listo para copiar o descargar.",
+        "Postulación en cola de revisión manual.",
+        "No se envió nada a portales externos.",
+    ]
+    if match.missing:
+        checklist.append(
+            "Requisitos faltantes visibles: "
+            + ", ".join(item.label for item in match.missing[:6])
+        )
+    return {
+        "application_id": application.id,
+        "status": application.status.value
+        if hasattr(application.status, "value")
+        else application.status,
+        "company": job.company,
+        "position": job.title,
+        "job_url": job.url,
+        "match_percent": match.score,
+        "customized_cv_id": customized.id,
+        "adapted_cv_text": customized.rendered_text,
+        "checklist": checklist,
+        "next_step": (
+            "Revisa el CV adaptado, descárgalo y postula manualmente "
+            "en la URL de la oferta si aplica."
+        ),
+    }
+
+
 @router.get("")
 def list_jobs():
     profile = workspace.profile
     items = []
     for job in workspace.jobs.values():
         match = workspace.matches.get(job.id)
+        customized = next(
+            (cv for cv in workspace.customized.values() if cv.job_id == job.id),
+            None,
+        )
         items.append(
             {
                 **job.model_dump(mode="json"),
                 "match": match.model_dump(mode="json") if match else None,
-                "customized_cv_id": next(
-                    (
-                        cv.id
-                        for cv in workspace.customized.values()
-                        if cv.job_id == job.id
-                    ),
-                    None,
-                ),
+                "customized_cv_id": customized.id if customized else None,
+                "has_adapted_cv": customized is not None,
             }
         )
     return {
@@ -96,23 +149,24 @@ def create_job_from_text(payload: JobTextPayload):
 def match_job(job_id: str):
     profile = _require_profile()
     job = _job_or_404(job_id)
-    match = match_profile_to_job(profile, job)
+    match = match_profile_to_job_ai(profile, job)
     workspace.matches[job.id] = match
-    return {"status": "success", "match": match.model_dump(mode="json")}
+    return {
+        "status": "success",
+        "match": match.model_dump(mode="json"),
+        "agent": "openai",
+    }
 
 
 @router.post("/{job_id}/customize")
 def customize_cv(job_id: str):
-    profile = _require_profile()
-    job = _job_or_404(job_id)
-    match = workspace.matches.get(job.id) or match_profile_to_job(profile, job)
-    workspace.matches[job.id] = match
+    profile, job, match, customized = _ensure_match_and_customized(job_id)
     plan = build_plan(profile, job, match)
-    customized = build_customized_cv(
+    customized = customize_cv_with_ai(
         profile,
         job,
-        plan,
-        customized_id=str(uuid4()),
+        match,
+        customized_id=customized.id,
     )
     workspace.plans[job.id] = plan
     workspace.customized[customized.id] = customized
@@ -120,37 +174,57 @@ def customize_cv(job_id: str):
         "status": "success",
         "plan": plan.model_dump(mode="json"),
         "customized_cv": customized.model_dump(mode="json"),
+        "adapted_cv_text": customized.rendered_text,
+        "download_name": f"CV_{job.company}_{job.title}.txt".replace(" ", "_"),
+        "agent": "openai",
+    }
+
+
+@router.get("/{job_id}/adapted-cv")
+def get_adapted_cv(job_id: str):
+    _require_profile()
+    job = _job_or_404(job_id)
+    customized = next(
+        (cv for cv in workspace.customized.values() if cv.job_id == job.id),
+        None,
+    )
+    if customized is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Todavía no hay CV adaptado para esta oferta. Pulsa Adaptar CV.",
+        )
+    return {
+        "status": "success",
+        "job_id": job.id,
+        "customized_cv_id": customized.id,
+        "adapted_cv_text": customized.rendered_text,
+        "download_name": f"CV_{job.company}_{job.title}.txt".replace(" ", "_"),
     }
 
 
 @router.post("/{job_id}/apply")
 def apply_to_job(job_id: str):
-    profile = _require_profile()
-    job = _job_or_404(job_id)
-    match = workspace.matches.get(job.id)
-    customized = next(
-        (cv for cv in workspace.customized.values() if cv.job_id == job.id),
-        None,
-    )
-    if match is None or customized is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Primero analiza la oferta y adapta el CV.",
-        )
+    _profile, job, match, customized = _ensure_match_and_customized(job_id)
 
     application = application_service.create_and_queue(
         ApplicationCreate(
-            candidate_id=profile.id,
+            candidate_id=_profile.id,
             job_id=job.id,
             customized_cv_id=customized.id,
             company=job.company,
             position=job.title,
             job_url=job.url,
             match_percent=match.score,
-            notes="Listo para revisión manual. Sin envío automático.",
+            notes=(
+                "Paquete de postulación listo para revisión manual. "
+                "Sin envío automático a portales."
+            ),
         )
     )
+    package = _application_package(application, job, match, customized)
     return {
         "status": "success",
         "application": application.model_dump(mode="json"),
+        "package": package,
+        "adapted_cv_text": customized.rendered_text,
     }

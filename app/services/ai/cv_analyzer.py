@@ -3,6 +3,7 @@ from pydantic import ValidationError
 from app.schemas.candidate import CandidateProfile
 from app.schemas.extraction import ExtractedProfile
 from app.services.ai.structured import StructuredOutputError, parse_structured
+from app.services.ai.usage import record_ai_call
 
 
 SYSTEM_PROMPT = """
@@ -28,11 +29,16 @@ Devuelve solo el esquema solicitado.
 
 
 def analyze_cv_text(text: str, candidate_id: str) -> CandidateProfile:
-    extracted = parse_structured(
-        ExtractedProfile,
-        SYSTEM_PROMPT,
-        f"DOCUMENTO_CV:\n{text}",
-    )
+    try:
+        extracted = parse_structured(
+            ExtractedProfile,
+            SYSTEM_PROMPT,
+            f"DOCUMENTO_CV:\n{text}",
+        )
+    except StructuredOutputError:
+        record_ai_call("cv_analyze", False, "structured_error")
+        raise
+
     try:
         profile = CandidateProfile.model_validate(
             {
@@ -43,7 +49,9 @@ def analyze_cv_text(text: str, candidate_id: str) -> CandidateProfile:
             }
         )
     except ValidationError as exc:
+        record_ai_call("cv_analyze", False, "validation_error")
         raise StructuredOutputError(
             "La respuesta del modelo no cumple CandidateProfile."
         ) from exc
+    record_ai_call("cv_analyze", True, f"name={profile.name}")
     return profile

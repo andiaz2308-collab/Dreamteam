@@ -3,6 +3,7 @@ from uuid import uuid4
 from app.schemas.extraction import ExtractedJob
 from app.schemas.job import JobProfile
 from app.services.ai.structured import parse_structured
+from app.services.ai.usage import record_ai_call
 
 
 SYSTEM_PROMPT = """
@@ -19,8 +20,10 @@ def analyze_job_text(text: str) -> JobProfile:
         SYSTEM_PROMPT,
         f"DOCUMENTO_OFERTA:\n{text}",
     )
-    return JobProfile(
+    job = JobProfile(
         id=str(uuid4()),
         source="llm",
         **extracted.model_dump(),
     )
+    record_ai_call("job_analyze", True, f"title={job.title}")
+    return job

@@ -21,3 +21,6 @@ class CustomizedCV(BaseModel):
     skills: list[str] = Field(default_factory=list)
     notes: str
     invented: bool = False
+    rendered_text: str = ""
+    target_role: str | None = None
+    target_company: str | None = None

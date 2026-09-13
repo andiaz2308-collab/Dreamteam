@@ -1,6 +1,7 @@
 from app.schemas.candidate import CandidateProfile
 from app.schemas.job import JobMatch, JobProfile
 from app.schemas.optimization import CustomizedCV, OptimizationPlan
+from app.services.cv_format import render_customized_cv
 
 
 def build_plan(
@@ -34,6 +35,20 @@ def build_plan(
     )
 
 
+def _experience_relevance(item, matched: set[str], emphasize: list[str]) -> int:
+    score = 0
+    score += sum(1 for skill in item.skills if skill in matched)
+    blob = " ".join(
+        part
+        for part in [item.position, item.company, item.description or ""]
+        if part
+    ).lower()
+    for label in emphasize:
+        if label.lower() in blob:
+            score += 2
+    return score
+
+
 def build_customized_cv(
     profile: CandidateProfile,
     job: JobProfile,
@@ -41,38 +56,62 @@ def build_customized_cv(
     customized_id: str,
 ) -> CustomizedCV:
     matched = set(plan.emphasize)
+
+    ranked = sorted(
+        profile.experience,
+        key=lambda item: _experience_relevance(item, matched, plan.emphasize),
+        reverse=True,
+    )
+
     experience_lines: list[str] = []
-    for item in profile.experience:
+    for item in ranked:
         title = " · ".join(
             part for part in [item.position, item.company] if part
         )
+        dates = " – ".join(
+            part
+            for part in [
+                item.start_date,
+                item.end_date or ("Actual" if item.current else None),
+            ]
+            if part
+        )
         relevant = [skill for skill in item.skills if skill in matched]
         line = title
+        if dates:
+            line = f"{title} ({dates})" if title else dates
         if item.description:
-            line = f"{title}: {item.description}"
+            line = f"{line}: {item.description}" if line else item.description
         if relevant:
-            line = f"{line} ({', '.join(relevant)})"
-        experience_lines.append(line)
+            line = f"{line} [{', '.join(relevant)}]"
+        if line:
+            experience_lines.append(line)
 
     if profile.summary:
         summary = profile.summary
         if plan.emphasize:
             summary = (
-                f"{profile.summary} En esta postulación se enfatizan "
-                f"competencias ya presentes: {', '.join(plan.emphasize[:5])}."
+                f"{profile.summary} Enfoque para esta oferta: "
+                f"{', '.join(plan.emphasize[:5])}."
             )
     else:
         summary = None
 
-    skills = [skill for skill in profile.skills if skill in matched] or list(
-        profile.skills
-    )
+    matched_skills = [skill for skill in profile.skills if skill in matched]
+    other_skills = [skill for skill in profile.skills if skill not in matched]
+    skills = matched_skills + other_skills
 
-    return CustomizedCV(
+    headline = profile.headline
+    if job.title and profile.headline:
+        headline = f"{profile.headline} · Orientación: {job.title}"
+    elif job.title:
+        headline = job.title
+
+    customized = CustomizedCV(
         id=customized_id,
         candidate_id=profile.id,
         job_id=job.id,
-        headline=profile.headline,
+        headline=headline,
         summary=summary,
         emphasize=plan.emphasize,
         experience=experience_lines,
@@ -82,4 +121,8 @@ def build_customized_cv(
             "El CV maestro no fue modificado."
         ),
         invented=False,
+        target_role=job.title,
+        target_company=job.company,
     )
+    customized.rendered_text = render_customized_cv(profile, customized, job)
+    return customized

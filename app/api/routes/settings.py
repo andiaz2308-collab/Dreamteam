@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.core.config import OPENAI_MODEL
+from app.core.config import OPENAI_API_KEY, OPENAI_MODEL
+from app.services.ai.usage import ai_status
 from app.services.workspace import workspace
 
 
@@ -18,6 +19,7 @@ def get_settings():
         "status": "success",
         "settings": {
             "openai_model": OPENAI_MODEL,
+            "openai_configured": bool(OPENAI_API_KEY),
             "apply_mode": workspace.apply_mode,
             "automation_enabled": False,
             "persistence": "memory",
@@ -26,6 +28,14 @@ def get_settings():
             "candidate_name": (
                 workspace.profile.name if workspace.has_profile() else None
             ),
+            "ai_agents": {
+                "cv_upload": "openai",
+                "job_analyze": "openai",
+                "match": "openai",
+                "customize": "openai",
+                "apply_queue": "local",
+            },
+            "ai_usage": ai_status(),
         },
     }
 

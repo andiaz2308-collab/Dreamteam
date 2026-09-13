@@ -30,6 +30,9 @@ class MatchingTests(unittest.TestCase):
         customized = build_customized_cv(DEMO_PROFILE, job, plan, "cv_test")
         self.assertFalse(customized.invented)
         self.assertIn("CV maestro", customized.notes)
+        self.assertTrue(customized.rendered_text)
+        self.assertIn(DEMO_PROFILE.name, customized.rendered_text)
+        self.assertIn(job.company, customized.rendered_text)
         self.assertTrue(
             any("biodiversidad" in line.lower() or "campo" in line.lower()
                 for line in customized.experience)

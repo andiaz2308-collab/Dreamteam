@@ -65,7 +65,7 @@ function renderApplications(items) {
     return `
       <div class="px-4 py-10 text-center">
         <p class="text-sm font-medium">Aún no hay postulaciones</p>
-        <p class="mt-1 text-sm text-zinc-500">Crea una de demostración para ver el Application Engine.</p>
+        <p class="mt-1 text-sm text-zinc-500">Desde Oportunidades → Preparar postulación.</p>
       </div>
     `;
   }
@@ -128,18 +128,56 @@ function showReview(review) {
   const body = document.getElementById("review-body");
   if (!modal || !body) return;
 
+  const checklist = (review.checklist || [])
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("");
+
   body.innerHTML = `
     <p class="text-sm font-medium">${escapeHtml(review.message)}</p>
     <dl class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
       <div><dt class="text-zinc-500">Empresa</dt><dd>${escapeHtml(review.company)}</dd></div>
       <div><dt class="text-zinc-500">Cargo</dt><dd>${escapeHtml(review.position)}</dd></div>
-      <div><dt class="text-zinc-500">URL</dt><dd>${escapeHtml(review.job_url || "—")}</dd></div>
-      <div><dt class="text-zinc-500">CV adaptado</dt><dd>${escapeHtml(review.customized_cv_id)}</dd></div>
-      <div><dt class="text-zinc-500">Carta</dt><dd>${escapeHtml(review.cover_letter_id || "No hay")}</dd></div>
+      <div><dt class="text-zinc-500">URL</dt><dd>${
+        review.job_url
+          ? `<a class="text-primary underline" href="${escapeHtml(review.job_url)}" target="_blank" rel="noopener">${escapeHtml(review.job_url)}</a>`
+          : "—"
+      }</dd></div>
       <div><dt class="text-zinc-500">Notas</dt><dd>${escapeHtml(review.notes || "—")}</dd></div>
     </dl>
+    ${
+      checklist
+        ? `<ul class="mt-4 list-disc space-y-1 pl-5 text-sm text-zinc-600">${checklist}</ul>`
+        : ""
+    }
+    ${
+      review.adapted_cv_text
+        ? `
+      <div class="mt-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-sm font-medium">CV adaptado</p>
+          <button type="button" id="review-download-cv" class="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-medium hover:bg-zinc-50">Descargar .txt</button>
+        </div>
+        <pre class="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl border border-zinc-200 bg-canvas p-3 text-sm leading-6 text-zinc-700">${escapeHtml(review.adapted_cv_text)}</pre>
+      </div>`
+        : `<p class="mt-4 text-sm text-zinc-500">No hay texto de CV adaptado en memoria para esta postulación.</p>`
+    }
   `;
   modal.classList.remove("hidden");
+
+  document.getElementById("review-download-cv")?.addEventListener("click", () => {
+    if (!review.adapted_cv_text) return;
+    const blob = new Blob([review.adapted_cv_text], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `CV_${review.company || "adaptado"}.txt`.replaceAll(" ", "_");
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  });
 }
 
 async function loadApplications() {
