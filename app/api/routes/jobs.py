@@ -336,7 +336,7 @@ def download_adapted_cv_docx(job_id: str):
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
         },
-    }
+    )
 
 
 @router.post("/{job_id}/apply")

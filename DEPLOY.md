@@ -25,7 +25,7 @@ Render free suele fallar en `pushing layers` con la imagen Docker + Tesseract
 
 1. New Web Service → repo Dreamteam
 2. Runtime: **Python** (no Docker)
-3. Build: `pip install -r requirements.txt`
+3. Build: `pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt`
 4. Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 5. Env **obligatoria**: `PYTHON_VERSION` = `3.12.8`
    (si no, Render usa 3.14 y `pydantic` falla al compilar)
